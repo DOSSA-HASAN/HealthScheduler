@@ -5,7 +5,7 @@ import { sendEMail } from "../../lib/sendEmail.js"
 import cloudinary from "../../lib/cloudinaryImage.js"
 
 export const createAccount = async (req, res) => {
-    const { email, password, username, imageUrl, role, specialization, experience } = req.body
+    const { email, password, username, imageUrl } = req.body
     if (!email || !password || !username)
         return res.status(404).json({ message: "Missing password or username or email" })
 
@@ -18,26 +18,18 @@ export const createAccount = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, genSalt)
 
         let image;
-        if(imageUrl) {
+        if (imageUrl) {
             image = await cloudinary.uploader.upload(imageUrl, { folder: "health-scheduler" })
         }
-
         const newUser = new userModel({
             username,
             password: hashedPassword,
             email,
-            role,
         })
 
         // add profile pic if its provided
-        if(image?.secure_url){
+        if (image?.secure_url) {
             user.profilePic = image.secure_url
-        }
-
-        // add xp and specialization if its provided
-        if(experience && specialization){
-            newUser.experience = experience
-            newUser.specialization = specialization
         }
 
         const userSaved = await newUser.save()
@@ -47,13 +39,54 @@ export const createAccount = async (req, res) => {
 
         const subject = `Hey ${newUser.username}!\nWelcome to HealthScheduler ready to book your next checkup?`
         const text = `Hi ${newUser.username}, 👋\nWelcome aboard! We're thrilled to have you as part of the HealthScheduler family.\nYour journey to stress-free appointments starts now. Whether it’s a regular checkup, a consultation, or a follow-up, booking your next visit is just a few clicks away!\n✅ Fast & easy appointment booking\n🩺 Verified doctors at your fingertips\n📅 Smart reminders so you never miss a date\nHere’s to healthier days ahead,\n– The HealthScheduler Team 💙`
-        
+
         await sendEMail(newUser.email, subject, text)
 
         return res.status(201).json({ message: "Account created successfully. Please log in" })
 
     } catch (error) {
         console.log(`Error occured in createAccount in auth.controller: ${error.message}`)
+        return res.status(500).json({ message: error.message })
+    }
+}
+
+export const createDoctorOrAdminAccount = async (req, res) => {
+    const user = req.user
+    const { email, password, username, imageUrl, role, specialization, experience } = req.body
+
+    if (!email || !password || !username || !role)
+        return res.status(400).json({ message: "missing required fields" })
+    if (user.role !== "admin")
+        return res.status(401).json({ message: "unauthorized" })
+
+    try {
+        const user = await userModel.findOne({ email })
+        if (user)
+            return res.status(409).json({ message: "user with email already exists" })
+
+        const saltRounds = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(password, saltRounds)
+
+        const newUser = new userModel({
+                username,
+                password: hashedPassword,
+                email,
+                role,
+            })
+
+        if (role === "doctor") {
+            if (specialization && experience) {
+                newUser.specialization = specialization
+                newUser.experience = experience
+            }
+        }
+
+        await newUser.save()
+        
+        return res.status(201).json(`${role} account has been created successfully.Please login`)
+
+    } catch (error) {
+        console.log(`Error occured in createDoctorOrAdminAccount in auth.controller: ${error.message}`)
         return res.status(500).json({ message: error.message })
     }
 }
@@ -83,7 +116,7 @@ export const login = async (req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax"
+            sameSite: "lax",
         })
 
         const { password: _, ...userWithoutPassword } = user._doc
