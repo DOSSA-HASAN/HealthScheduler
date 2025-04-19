@@ -5,9 +5,9 @@ import { sendEMail } from "../../lib/sendEmail.js"
 import cloudinary from "../../lib/cloudinaryImage.js"
 
 export const createAccount = async (req, res) => {
-    const { email, password, username, imageUrl, role } = req.body
-    if (!email || !password || !username || !imageUrl)
-        return res.status(404).json({ message: "Missing password or username" })
+    const { email, password, username, imageUrl, role, specialization, experience } = req.body
+    if (!email || !password || !username)
+        return res.status(404).json({ message: "Missing password or username or email" })
 
     try {
         const user = await userModel.findOne({ email })
@@ -17,18 +17,31 @@ export const createAccount = async (req, res) => {
         const genSalt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password, genSalt)
 
-        const image = await cloudinary.uploader.upload(imageUrl, { folder: "health-scheduler" })
+        let image;
+        if(imageUrl) {
+            image = await cloudinary.uploader.upload(imageUrl, { folder: "health-scheduler" })
+        }
 
         const newUser = new userModel({
             username,
             password: hashedPassword,
             email,
             role,
-            profilePic: image.secure_url
         })
 
+        // add profile pic if its provided
+        if(image?.secure_url){
+            user.profilePic = image.secure_url
+        }
+
+        // add xp and specialization if its provided
+        if(experience && specialization){
+            newUser.experience = experience
+            newUser.specialization = specialization
+        }
 
         const userSaved = await newUser.save()
+
         if (!userSaved)
             return res.status(500).json({ message: "Unable to create account. Please try again later" })
 

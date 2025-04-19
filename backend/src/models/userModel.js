@@ -11,36 +11,24 @@ const UserSchema = new mongoose.Schema(
         passwordOtpExpiryDate: { type: Date, default: null },
         emailResetOtp: { type: String, default: "" },
         emailOtpExpiryDate: { type: Date, default: null },
-        specialization: {
-            type: String,
-            validate: {
-                validator: function (value) {
-                    if(this.role === "doctor") return !!value
-
-                    return value === undefined || value === null
-                },
-                message: function (props) {
-                    return this.role === "doctor" ? "Specialization is required for doctors." : "Specialization is only allowed for doctors."
-                }
-            }
-        },
-        experience: {
-            type: Number,
-            validate: {
-                validator: function (value) {
-                    if(this.role === "doctor") return typeof value === "number" && value > 0
-
-                    return value === undefined || value === null
-                },
-                message: function (props) {
-                    return this.role === "doctor" ? "Experience is required for doctors." : "Experience is only allowed for doctors."
-                }
-            }
-        }
+        specialization: { type: String, default: "" },
+        experience: {type: Number, default: ""}
     },
     {
         timestamps: true
     }
 )
+
+UserSchema.pre("save", function (next) {
+    if(this.role === "doctor"){
+        if(!this.experience || !this.specialization){
+            return next(new Error("Specialization and experience are required for doctors."))
+        }
+        if(typeof this.experience !== "number" || this.experience <= 0){
+            return next(new Error("Experience must be a positive number for doctors."))
+        }
+    }
+    next()
+})
 
 export const userModel = mongoose.model("user", UserSchema)
