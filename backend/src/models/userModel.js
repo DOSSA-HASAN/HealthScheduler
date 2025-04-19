@@ -11,8 +11,8 @@ const UserSchema = new mongoose.Schema(
         passwordOtpExpiryDate: { type: Date, default: null },
         emailResetOtp: { type: String, default: "" },
         emailOtpExpiryDate: { type: Date, default: null },
-        specialization: { type: String, default: "" },
-        experience: {type: Number, default: ""}
+        specialization: { type: String },
+        experience: { type: Number }
     },
     {
         timestamps: true
@@ -20,12 +20,16 @@ const UserSchema = new mongoose.Schema(
 )
 
 UserSchema.pre("save", function (next) {
-    if(this.role === "doctor"){
-        if(!this.experience || !this.specialization){
+    if (this.role === "doctor") {
+        if (!this.experience || !this.specialization) {
             return next(new Error("Specialization and experience are required for doctors."))
         }
-        if(typeof this.experience !== "number" || this.experience <= 0){
+        if (typeof this.experience !== "number" || this.experience <= 0) {
             return next(new Error("Experience must be a positive number for doctors."))
+        }
+    } else {
+        if (this.experience || this.specialization) {
+            return next(new Error("Only doctors are allowed to have specialization and experience."));
         }
     }
     next()
