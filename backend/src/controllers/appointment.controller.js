@@ -1,10 +1,15 @@
 import { sendEMail } from "../../lib/sendEmail.js"
+import { io, loadBookedDates } from "../../lib/socket.io.setup.js"
 import { appointmentForPateints } from "../models/appointment.model.js"
 import { userModel } from "../models/userModel.js"
 
 export const bookAppointment = async (req, res) => {
     const { doctorId, appointmentDate, status, notes } = req.body
-    const { patientId, email: userEmail } = req.user._id
+    const { _id: patientId, email: userEmail, role } = req.user
+
+    if (role !== "user")
+        return res.status(400).json({ message: "non-user accounts cant book appointments, create a user account to do so" })
+
     if (!doctorId || !patientId || !appointmentDate)
         return res.status(400).json({ message: "missing required fields" })
 
@@ -29,6 +34,9 @@ export const bookAppointment = async (req, res) => {
         })
 
         const appointment = await newAppointment.save()
+        const bookedDates = await loadBookedDates()
+        io.emit("allBookedDates", bookedDates)
+
         if (!appointment)
             return res.status(400).json({ message: "could not book appointment" })
 
@@ -37,10 +45,10 @@ export const bookAppointment = async (req, res) => {
         const appointmentTimeOnly = ISODate.split("T")[1]
 
         const subject = `You're all set, ${patient.username}! ✅ Appointment confirmed with ${doctor.username}`
-        const text = `Hi ${patient.username}, 👋\nYour appointment with Dr. ${doctorName} has been successfully booked!\n🗓️ Date: ${appointmentDateOnly}\n🕒 Time: ${appointmentTimeOnly}\n📍 Location:Right here within our clinic\nNeed to make changes? No worries, you can reschedule or cancel anytime from your dashboard.\nSee you soon!\n– HealthScheduler 💙`
+        const text = `Hi ${patient.username}, 👋\nYour appointment with Dr. ${doctor.username} has been successfully booked!\n🗓️ Date: ${appointmentDateOnly}\n🕒 Time: ${appointmentTimeOnly}\n📍 Location:Right here within our clinic\nNeed to make changes? No worries, you can reschedule or cancel anytime from your dashboard.\nSee you soon!\n– HealthScheduler 💙`
         await sendEMail(userEmail, subject, text)
 
-        return res.status(201).json({ message: "Appointment booked" })
+        return res.status(201).json(appointment)
 
     } catch (error) {
         console.log(`Error in booking appointment: ${error.message}`)
@@ -50,14 +58,14 @@ export const bookAppointment = async (req, res) => {
 }
 
 export const getAllAppointments = async (req, res) => {
-    const role = req.user.role
-    if (role !== "doctor" || role !== "admin")
+    const user = req.user
+    if (user.role !== "doctor" && user.role !== "admin")
         return res.status(401).json({ message: "Unauthorized person" })
     try {
         const appointments = await appointmentForPateints.find()
             .sort({ appointmentDate: -1 })
-            .populate("doctorId", "username email role")
-            .populate("patientId", "username email role");
+            .populate("doctor")
+            .populate("patient");
 
         if (!appointments)
             return res.status(200).json({ message: "No appointments available" })
@@ -71,13 +79,14 @@ export const getAllAppointments = async (req, res) => {
     }
 }
 
+// appointments for doctor, protected route for doctors only
 export const getBookedAppointments = async (req, res) => {
-    const { doctorId } = req.body
+    const { id: doctorId } = req.user
     if (!doctorId)
         return res.status(400).json({ message: "Missing doctor Id" })
 
     try {
-        const bookedAppointments = await appointmentForPateints.find(doctorId).select("appointmentDate -_id")
+        const bookedAppointments = await appointmentForPateints.find({ doctorId })
 
         if (!bookedAppointments)
             return res.status(200).json({ message: "No booked appointments" })
@@ -91,12 +100,15 @@ export const getBookedAppointments = async (req, res) => {
 }
 
 export const getUserAppointments = async (req, res) => {
-    const userId = req.user._id
+    const { id: userId, role } = req.user
     if (!userId)
         return res.status(401).json({ message: "Unauthorized" })
 
+    if (role !== "user")
+        return res.status(401).json({ message: "unauthorized - only users can check their own appointments" })
+
     try {
-        const appointments = await appointmentForPateints.findById(userId)
+        const appointments = await appointmentForPateints.find({ patientId: userId })
             .sort({ appointmentDate: -1 })
 
         if (!appointments)
@@ -111,11 +123,11 @@ export const getUserAppointments = async (req, res) => {
 }
 
 export const updateAppointment = async (req, res) => {
-    const role = req.user.role
+    const user = req.user
     const { status, notes } = req.body
     const { id: appointmentId } = req.params
 
-    if (role !== "doctor" || role !== "admin")
+    if (user.role !== "doctor" && user.role !== "admin")
         return res.status(401).json({ message: "Unauthorized person" })
 
     if (!appointmentId)
@@ -143,10 +155,11 @@ export const updateAppointment = async (req, res) => {
     }
 }
 
+// when app starts it should run to check all appointements that have past their dates and set their status to "cancelled"
 export const updatePastAppointments = async (req, res) => {
     try {
         const now = new Date()
-        const updateManyAppointments = await appointmentForPateints.updateMany(
+        const updateManyAppointments = await appointmentForPateints.updateOne(
             {
                 appointmentDate: { $lt: now },
                 status: { $ne: "cancelled" }
@@ -162,17 +175,35 @@ export const updatePastAppointments = async (req, res) => {
     }
 }
 
+// meant for users only, only they should have a cancel-only option
 export const cancelAppointment = async (req, res) => {
-    const { id: appointmentId } = req.params.id
+    const { id: appointmentId } = req.params
+    const user = req.user
+    const notes = "cancelled by self"
+
     if (!appointmentId)
         return res.status(400).json({ message: "missing appointment id" })
+
+    if (user.role !== "user")
+        return res.status(401).json({ message: "unauthorized - only users can cancel this appointment" })
     try {
-        const appointment = await appointmentForPateints.findByIdAndUpdate(
-            appointmentId,
-            { status: "cancelled" },
-            { new: true }
-        )
-        return res.status(200).json(appointment)
+        const appointment = await appointmentForPateints.findById(appointmentId).populate("doctor").populate("patient")
+
+        if (user._id.toString() !== appointment.patientId._id.toString())
+            return res.status(401).json({ message: "unauthorized  not ur appointment" })
+
+        if (appointment.status === "cancelled")
+            return res.status(400).json({ message: "cant modify an appointment that has been cancelled" })
+
+        appointment.status = "cancelled"
+        appointment.notes = notes
+
+        const cancelledAppointment = await appointment.save()
+
+        const bookedDates = await loadBookedDates()
+        io.emit("allBookedDates", bookedDates)
+
+        return res.status(200).json(cancelledAppointment)
     } catch (error) {
         console.log(`Error occured while cancelling appointment: ${error.message}`)
         console.log(`Error occured while cancelling appointment: ${error.stack}`)
