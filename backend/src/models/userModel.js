@@ -11,8 +11,8 @@ const UserSchema = new mongoose.Schema(
         passwordOtpExpiryDate: { type: Date, default: null },
         emailResetOtp: { type: String, default: "" },
         emailOtpExpiryDate: { type: Date, default: null },
-        specialization: { type: String },
-        experience: { type: Number }
+        specialization: { type: String, default: "General" },
+        experience: { type: Number, default: 1 }
     },
     {
         timestamps: true
