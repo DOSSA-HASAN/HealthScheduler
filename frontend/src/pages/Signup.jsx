@@ -5,10 +5,11 @@ import { Eye, EyeClosed, EyeOff } from 'lucide-react'
 import AuthDesign from "../components/AuthDesign"
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
+import Loading from '../components/Loading'
 
 function Signup() {
 
-    const { signup } = useAuthStore()
+    const { signup, isSigningUp } = useAuthStore()
 
     const [showPassword, setShowPassword] = useState(false)
     const [formData, setFormData] = useState({
@@ -33,6 +34,9 @@ function Signup() {
     return (
         <motion.div className='h-[100%] lg:h-[calc(100vh-70px)]' variants={AnimationVariants} initial={"initial"} animate={"animate"} exit={"exit"} transition={{ duration: 0.3 }}>
             <section className='flex justify-between items-center w-full h-full'>
+                {
+                    isSigningUp && <Loading />
+                }
                 <AuthDesign />
                 <form onSubmit={handleSubmit} className='w-full flex flex-col justify-center lg:w-[50%] h-full p-10'>
                     <h2 className='font-bold text-[40px] mb-10'>Sign up to get started</h2>
