@@ -8,7 +8,7 @@ import Loading from '../components/Loading'
 
 function Profile() {
 
-    const { authUser, updatingProfile, setUpdatingProfile, resetPasswordOTP, changeEmailOTP, isUpdatingEmail, changeProfilePic, changingProfilePic } = useAuthStore()
+    const { authUser, updatingProfile, setUpdatingProfile, resetPasswordOTP, changeEmailOTP, isUpdatingEmail, changeProfilePic, changingProfilePic, logout } = useAuthStore()
     const [editField, setEditField] = useState(null)
     const [email, setEmail] = useState(authUser.email || "")
     const ImageRef = useRef(null)
@@ -61,6 +61,7 @@ function Profile() {
                         <button onClick={() => { (setUpdatingProfile('password')), resetPasswordOTP() }} className='w-[80%] lg:w-[40%] border-2 bg-blue-600 text-white font-bold  rounded-md  h-full hover:cursor-pointer hover:bg-blue-500'>Change Password</button>
                     </article>
 
+                    <button onClick={logout} className='p-[10px] w-full bg-red-600 hover:bg-red-500 mt-5 rounded-md text-white font-[18px] font-bold'>Logout</button>
                     <p className='w-full text-center mt-5 font-bold text-gray-700'>Member since {authUser.createdAt.split('T')[0]}</p>
                 </form>
             </section>
