@@ -127,6 +127,20 @@ export const useAuthStore = create((set, get) => ({
         } finally {
             set({ changingProfilePic: false })
         }
+    },
+
+    createAdminOrDoctorAccount: async (username, password, email, specialization, experience, role) => {
+        set({ isSigningUp: true })
+        try {
+            const res = await axiosInstance.post('auth/create', { email: email, password: password, username: username, role: role, specialization: specialization, experience: experience })
+            toast.success("Account created successfully")
+
+        } catch (error) {
+            console.log(error.message)
+            toast.error(error.message)
+        } finally {
+            set({ isSigningUp: false })
+        }
     }
 
 }))
