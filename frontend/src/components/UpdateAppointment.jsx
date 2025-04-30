@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { useAppointmentStore } from '../store/useAppointmentStore'
 import { AnimationVariants } from '../lib/AnimationVariants'
 import { motion } from 'framer-motion'
+import Loading from "../components/Loading"
 
 function UpdateAppointment() {
 
-    const { setAppointmentToUpdate, updateAppointmentDetails } = useAppointmentStore()
+    const { setAppointmentToUpdate, updateAppointmentDetails, isUpdatingAppointmentDetails } = useAppointmentStore()
 
     const [formData, setFormData] = useState({
         status: '',
@@ -28,7 +29,8 @@ function UpdateAppointment() {
     }
 
     return (
-        <motion.div variants={AnimationVariants} initial={"initial"} animate={"animate"} exit={"exit"} transition={{ duration: 0.3 }} className='flex justify-center items-center absolute z-[200] h-full lg:h-[calc(100vh-70px)] w-full backdrop-blur'>
+        <motion.div variants={AnimationVariants} initial={"initial"} animate={"animate"} exit={"exit"} transition={{ duration: 0.3 }} className='flex justify-center items-center absolute z-[200] h-full w-full backdrop-blur'>
+            {isUpdatingAppointmentDetails && <Loading />}
             <form className='flex flex-col justify-center items-center bg-white shadow-xl w-[400px] h-[350px] rounded-md'>
                 <p className='w-full text-center font-bold text-[20px] mb-[20px] text-blue-600'>Update Appointment Details</p>
                 <input onChange={(e) => handleInputChange(e)} required type="text" name='notes' placeholder='Enter notes' className='border-1 border-gray-300 rounded-md p-3 focus:outline-none mb-5 w-[80%]' />
