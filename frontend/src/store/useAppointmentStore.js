@@ -6,43 +6,71 @@ import { socket } from "../lib/socket"
 
 export const useAppointmentStore = create((set, get) => ({
     blockedDates: [],
-    appointments: null,
+    appointments: [],
     isBookingAppointment: false,
     isUpdatingAppointmentDetails: false,
     isFetchingAppointments: false,
     appointmentToUpdate: null,
+    doctors: null,
     setAppointmentToUpdate: (status) => set({ appointmentToUpdate: status }),
+    doctorToBook: null,
+    setDoctorToBook: (docId) => set({ doctorToBook: docId }),
 
-    initializeSocketListener: () => {
+    initializeSocketListener: (doctorId) => {
         socket.off("allBookedDates")
         socket.off("connect")
         socket.off("disconnect")
+        socket.off("newBookedDate")
+        socket.off("joinDoctorRoom")
+
+        socket.on("connect", () => {
+            if (doctorId) {
+                console.log("socket is running tried and tested")
+                socket.emit("joinDoctorRoom", doctorId);
+                console.log(`Attempting to emit joinDoctorRoom for doctorId: ${doctorId}`)
+            }
+        })
 
         socket.on("allBookedDates", (bookedDates) => {
             console.log(`dates that are booked`, bookedDates)
             set({ blockedDates: bookedDates })
         })
 
-        socket.on("connected", (socket) => {
-            console.log(`connected`, socket.id)
+        socket.on("newBookedDate", (newBookedDate) => {
+            console.log(newBookedDate)
+            set((prev) => ({
+                blockedDates: [...prev.blockedDates, newBookedDate]
+            }))
         })
+
+        socket.on("newDoctorAppointment", (newAppointment) => {
+            console.log("New appointment received", newAppointment);
+            set((prev) => ({
+                appointments: [...prev.appointments, newAppointment]
+            }))
+            toast.success("You have a new appointment")
+        })
+
 
         socket.on("disconnect", () => {
             console.log(`disconnected`)
         })
     },
 
-    bookAppointment: async (doctorId, appointmentDate, status, notes) => {
+    bookAppointment: async (doctorId, appointmentDate, notes) => {
+        console.log(new Date(appointmentDate).toISOString())
+
         set({ isBookingAppointment: true })
         try {
-            const res = await axiosInstance.post('appointment/book-appointment', { doctorId, appointmentDate, status, notes })
+            const res = await axiosInstance.post('appointment/book-appointment', { doctorId, appointmentDate, notes })
             set((prev) => ({ appointments: [...prev.appointments, res.data] }))
             toast.success("Appointment Booked")
         } catch (error) {
             console.log(error.stack)
             toast.error("Appointment not booked")
         } finally {
-            set({ isBookingAppointment: true })
+            set({ isBookingAppointment: false })
+            set({ doctorToBook: null })
         }
     },
 
@@ -81,6 +109,7 @@ export const useAppointmentStore = create((set, get) => ({
         set({ isUpdatingAppointmentDetails: true })
         try {
             const res = await axiosInstance.post(`appointment/update/${get().appointmentToUpdate.id}`, { status, notes })
+            console.log("updated appointment", res.data)
             set((state) => ({
                 appointments: [...state.appointments.filter(appointment => appointment.id !== get().appointmentToUpdate.id), res.data]
             }))
@@ -123,6 +152,18 @@ export const useAppointmentStore = create((set, get) => ({
         } finally {
             set({ isFetchingAppointments: false })
         }
+    },
+
+    getAllDoctors: async () => {
+        try {
+            const res = await axiosInstance.get('user/doctors')
+            set({ doctors: res.data })
+            console.log(res.data)
+        } catch (error) {
+            console.log(error.stack)
+            toast.error("Could not fetch doctors")
+        }
     }
+
 
 }))
