@@ -6,15 +6,25 @@ import { useAuthStore } from '../store/useAuthStore'
 import AuthDesign from "../components/AuthDesign"
 import { Link } from 'react-router-dom'
 import Loading from '../components/Loading'
+import GoogleOAuthButton from '../components/GoogleOAuthButton'
 
 function Login() {
 
-    const { login, isLogginIn } = useAuthStore()
+    const { login, isLogginIn, googleLogin } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     })
+
+    const handleGoogleLogin = async (googleToken) => {
+        try {
+            await googleLogin(googleToken);
+            // Optionally navigate or show a success message here
+        } catch (error) {
+            console.error("Google login error:", error.message);
+        }
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -49,6 +59,12 @@ function Login() {
                         }
                     </div>
                     <button className='bg-blue-600 text-white font-bold rounded-md h-10 hover:bg-blue-500 hover:cursor-pointer mb-5'>Login</button>
+                    <div className='flex justify-center items-center mb-5'>
+                        <div className='h-[2px] w-[40%] bg-gray-300'></div>
+                        <p className='ml-[10px] mr-[10px] text-gray-400'>or</p>
+                        <div className='h-[2px] w-[40%] bg-gray-300'></div>
+                    </div>
+                    <GoogleOAuthButton onSuccess={handleGoogleLogin} />
                     <p className='w-full font-bold text-center text-gray-400'>Don't have an account click <Link to={'/register'} className='text-blue-600'>here</Link> to create one</p>
                 </form>
             </section>
