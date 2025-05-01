@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { create } from "zustand"
 import { toast } from "react-hot-toast"
-import { axiosInstance } from "../lib/axiosInstance"
+import { axiosInstance } from "../lib/axiosInstance.js"
 import { socket } from "../lib/socket"
 
 export const useAppointmentStore = create((set, get) => ({
