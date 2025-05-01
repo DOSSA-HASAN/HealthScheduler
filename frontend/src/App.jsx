@@ -1,33 +1,69 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import Navbar from './components/Navbar'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { AnimatePresence } from "framer-motion"
+import Login from './pages/Login'
+import { Toaster } from "react-hot-toast"
+import Signup from './pages/Signup'
+import AuthDesign from "./components/AuthDesign"
+import { useAuthStore } from './store/useAuthStore'
+import Loading from './components/Loading'
+import Profile from './pages/Profile'
+import Appointment from './pages/Appointment'
+import SeeDoctors from './pages/SeeDoctors'
+import { useAppointmentStore } from './store/useAppointmentStore'
+import { socket } from './lib/socket'
+import CreateDoctorOrAdminAccount from './pages/CreateDoctorOrAdminAccount'
+import Home from './pages/Home'
+
+function AnimatedRoutes() {
+
+  const location = useLocation()
+  const { authUser } = useAuthStore()
+  const { initializeSocketListener, blockedDates } = useAppointmentStore()
+
+  useEffect(() => {
+    // pass the doctors id / admin id to view their appointments once patient books them
+    if (authUser?.role === "doctor") {
+      console.log(socket.connected)
+      initializeSocketListener(authUser._id)
+    } else {
+      initializeSocketListener()
+      console.log(authUser)
+
+    }
+    if (blockedDates.length > 0) {
+      console.log(blockedDates)
+    }
+  }, [authUser])
+
+  return (
+    <AnimatePresence mode='wait'>
+      <Routes location={location} key={location.pathname}>
+        <Route path='/login' element={authUser !== null ? <Navigate to={'/'}/> : <Login />} />
+        <Route path='/register' element={authUser !== null ? <Navigate to={'/'}/> : <Signup />} />
+        <Route path='/profile' element={authUser !== null ? <Profile /> : <Login />} />
+        <Route path='/appointments' element={<Appointment />} />
+        <Route path='/' element={<Home />} />
+        <Route path='/book-appointment' element={authUser !== null ? <SeeDoctors /> : <Navigate to={'/register'}/> } />
+        <Route path='/admin-doctor-account-registration' element={authUser?.role !== "admin" ? <Navigate to={'/register'} /> : <CreateDoctorOrAdminAccount />} />
+      </Routes>
+    </AnimatePresence>
+  )
+}
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <BrowserRouter>
+        <Navbar />
+        <AnimatedRoutes />
+        <Toaster />
+      </BrowserRouter>
     </>
   )
 }
