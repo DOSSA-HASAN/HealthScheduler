@@ -4,7 +4,7 @@ function GoogleOAuthButton({ onSuccess }) {
     useEffect(() => {
         if (window.google) {
             google.accounts.id.initialize({
-                client_id: '634096214756-c9a9cojoj7re6iq7m2tj701d5r7ouoar.apps.googleusercontent.com',
+                client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
                 callback: handleCallbackResponse,
             });
 
