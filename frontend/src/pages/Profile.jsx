@@ -62,6 +62,10 @@ function Profile() {
                     </article>
 
                     <button onClick={logout} className='p-[10px] w-full bg-red-600 hover:bg-red-500 mt-5 rounded-md text-white font-[18px] font-bold'>Logout</button>
+                    {
+                        authUser?.role === "doctor" &&
+                        <p className='w-full text-center mt-5 font-bold text-gray-700'>{authUser?.username} | {authUser?.specialization}</p>
+                    }
                     <p className='w-full text-center mt-5 font-bold text-gray-700'>Member since {authUser.createdAt.split('T')[0]}</p>
                 </form>
             </section>
