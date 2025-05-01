@@ -16,6 +16,8 @@ connectDB()
 
 // const app = express()
 
+const __dirname = path.resolve();
+
 app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
@@ -27,6 +29,14 @@ app.use('/api/auth', authRouter)
 app.use('/api/user', usersRouter)
 app.use('/api/appointment', appointmentRouter)
 app.use('/api/update-profile', updateProfileRouter)
+
+if(process.env.NODE_ENV === "production"){
+    app.use(express.static(path.join(__dirname, "../frontend/dist")))
+
+    app.get("*", (req, res) => {
+        res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"))
+    })
+}
 
 server.listen(PORT, () => {
     console.log(`server started on port: ${PORT}`)
