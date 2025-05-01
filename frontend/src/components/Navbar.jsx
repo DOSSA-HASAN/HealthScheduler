@@ -10,8 +10,7 @@ function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
 
     const location = useLocation()
-    const lastSegment = location.pathname.split('/').filter(Boolean).pop()
-    console.log(lastSegment)
+    const lastSegment = location.pathname.split('/').filter(Boolean).pop() || ''
 
     return (
         <>
@@ -26,21 +25,24 @@ function Navbar() {
                 {
                     authUser &&
                     <div className='flex justify-between items-center'>
-                        <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment === "dashboard" || lastSegment === undefined ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/dashboard'}>Dashboard</Link></p>
-                        <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment === "appointments" ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/appointments'}>Appointments</Link></p>
-                        <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment === "book-appointment" ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/book-appointment'}>Book Appointment</Link></p>
+                        <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment.startsWith("/") || location.pathname === '/' ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/'}>Home</Link></p>
+                        <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment.startsWith("appointments") ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/appointments'}>Appointments</Link></p>
+                        <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment.startsWith("book-appointment") ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/book-appointment'}>Book Appointments</Link></p>
+                        {
+                            authUser?.role === "admin" &&
+                            <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment.startsWith("admin-doctor-account-registration") ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/admin-doctor-account-registration'}>Create Admin or Doctor Account</Link></p>
+                        }
                     </div>
                 }
 
                 {
                     authUser === null ?
                         <div className='flex justify-between items-center w-[230px]'>
-                            <Link className='text-blue-500 font-bold text-[20px]'>Login</Link>
-                            <Link className='font-bold text-[17px] bg-blue-600 text-white pt-[5px] pb-[5px] pr-[15px] pl-[15px] rounded-md hover:bg-blue-500'>Register</Link>
+                            <Link to={'/login'} className='text-blue-500 font-bold text-[20px]'>Login</Link>
+                            <Link to={'/register'} className='font-bold text-[17px] bg-blue-600 text-white pt-[5px] pb-[5px] pr-[15px] pl-[15px] rounded-md hover:bg-blue-500'>Register</Link>
                         </div>
                         :
-                        <div className='flex justify-between items-center w-[100px]'>
-                            <Link to={'/update-profile'}><Cog size={30} /></Link>
+                        <div className='flex justify-between items-center w-[50px]'>
                             <Link to={'/profile'}>
                                 <img className='border-1 border-gray-400 w-[40px] h-[40px] rounded-full ' src={authUser.profilePic || "/no-avatar.png"} alt="" srcset="" />
                             </Link>
@@ -63,18 +65,21 @@ function Navbar() {
                     {
                         authUser === null ?
                             <div className='flex flex-col justify-center items-center w-full'>
-                                <Link className='text-blue-500 font-bold text-[20px] mt-3 mb-3'>Login</Link>
-                                <Link className='font-bold text-[17px] bg-blue-600 text-white pt-[5px] pb-[5px] pr-[15px] pl-[15px] rounded-md hover:bg-blue-500'>Register</Link>
+                                <Link to={'/login'} className='text-blue-500 font-bold text-[20px] mt-3 mb-3'>Login</Link>
+                                <Link to={'/register'} className='font-bold text-[17px] bg-blue-600 text-white pt-[5px] pb-[5px] pr-[15px] pl-[15px] rounded-md hover:bg-blue-500'>Register</Link>
                             </div>
                             :
                             <div className='flex flex-col justify-between items-center w-full'>
-                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment === "update-profile" ? 'text-blue-500' : 'text-gray-500'}`} to={'/update-profile'}>Profile Settings</Link>
-                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment === "dashboard" || lastSegment === undefined ? 'text-blue-500' : 'text-gray-500'}`} to={'/dashboard'}>Dashboard</Link>
-                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment === "appointments" ? 'text-blue-500' : 'text-gray-500'}`} to={'/appointments'}>Appointments</Link>
-                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment === "view-doctors" ? 'text-blue-500' : 'text-gray-500'}`} to={'/view-doctors'}>See Doctors</Link>
+                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("dashboard") || location.pathname === '/' ? 'text-blue-500' : 'text-gray-500'}`} to={'/dashboard'}>Dashboard</Link>
+                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("appointments") ? 'text-blue-500' : 'text-gray-500'}`} to={'/appointments'}>Appointments</Link>
+                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("book-appointment") ? 'text-blue-500' : 'text-gray-500'}`} to={'/book-appointment'}>Book APpointments</Link>
                                 <Link to={'/profile'}>
                                     <img className='border-1 border-gray-400 w-[40px] h-[40px] rounded-full mt-3 mb-t' src={authUser.profilePic || "/no-avatar.png"} alt="" srcset="" />
                                 </Link>
+                                {
+                                    authUser?.role === "admin" &&
+                                    <p className={`font-bold pr-3 pl-3 mr-2 ml-2 ${lastSegment.startsWith("admin-doctor-account-registration") ? 'text-blue-500' : 'text-gray-500'}`}><Link to={'/admin-doctor-account-registration'}>Create Admin or Doctor Account</Link></p>
+                                }
                             </div>
                     }
                 </div>
