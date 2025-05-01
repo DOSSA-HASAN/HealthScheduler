@@ -5,19 +5,16 @@ import { appointmentForPateints } from "../src/models/appointment.model.js"
 import { updatePastAppointments } from "../src/controllers/appointment.controller.js"
 
 let blockedDates = []
+export let connectedDoctors = []
 
 export const loadBookedDates = async () => {
     try {
-        const bookedDates = await appointmentForPateints.find().select("appointmentDate")
-        blockedDates = bookedDates.map(appointment => {
-            const appointmentDate = new Date(appointment.appointmentDate)
-            const formattedTime = appointmentDate.toISOString().split('T')
-            return `${formattedTime[0]}T${formattedTime[1].split('.')[0]}`
-        })
+        const bookedDates = await appointmentForPateints.find().select("doctorId appointmentDate").lean()
+        return bookedDates
     } catch (error) {
         console.log(`Error occured while loading booked dates: ${error.message}`)
         console.log(`Error occured while loading booked dates: ${error.stack}`)
-        return res.status(500).json({ message: error.message })
+        return []
     }
 }
 
@@ -31,18 +28,34 @@ const io = new Server(server, {
     }
 })
 
-io.on("connection", async (socket) => {
-    console.log('user has connected ' + socket.id)
+io.on("connection", (socket) => {
+    console.log('user has connected ' + socket.id);
 
-    await updatePastAppointments()
-
-    const bookedDates = await loadBookedDates()
-    blockedDates = [...blockedDates, ...bookedDates]
-    io.emit("allBookedDates", blockedDates)
+    // Attach all listeners first
+    socket.on("joinDoctorRoom", (doctorId) => {
+        const doctorRoom = String(doctorId);
+        connectedDoctors[doctorRoom] = socket.id;
+        socket.join(doctorRoom);
+        console.log(`Doctor ${doctorRoom} joined their room with socket ID: ${socket.id}`);
+    });
 
     socket.on("disconnect", () => {
-        console.log('user has disconnected ' + socket.id)
-    })
-})
+        console.log('user has disconnected ' + socket.id);
+        const doctorId = Object.keys(connectedDoctors).find(key => connectedDoctors[key] === socket.id);
+        if (doctorId) {
+            delete connectedDoctors[doctorId];
+            console.log(`Doctor ${doctorId} has disconnected.`);
+        }
+    });
 
-export { io, server, app}
+    // THEN do async stuff
+    (async () => {
+        await updatePastAppointments();
+        const bookedDates = await loadBookedDates();
+        blockedDates = bookedDates
+        io.emit("allBookedDates", blockedDates);
+    })();
+});
+
+
+export { io, server, app }
