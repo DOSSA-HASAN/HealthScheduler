@@ -6,7 +6,7 @@ export const useAuthStore = create((set, get) => ({
     authUser: localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null,
     isUpdatingEmail: false,
     isUpdatingPassword: false,
-    isLogginIn: false,
+    isLogginIn: false,  
     isSigningUp: false,
     updatingProfile: null,
     changingProfilePic: false,
@@ -24,9 +24,6 @@ export const useAuthStore = create((set, get) => ({
             console.log(res.data)
             toast.success("Logged in successfully")
             localStorage.setItem("user", JSON.stringify(res.data))
-            setTimeout(() => {
-                window.location.pathname = "/"
-            }, 1000);
         } catch (error) {
             toast.error("Could not login")
             console.log(error.message)
@@ -140,6 +137,23 @@ export const useAuthStore = create((set, get) => ({
             toast.error(error.message)
         } finally {
             set({ isSigningUp: false })
+        }
+    },
+
+    googleLogin: async (token) => {
+        try {
+            const { data } = await axiosInstance.post("auth/google-login", { token }, {
+                headers: {
+                    'Cross-Origin-Opener-Policy': 'same-origin',
+                    'Cross-Origin-Embedder-Policy': 'require-corp',
+                    'Content-Type': 'application/json'
+                }
+            });
+            set({ authUser: data })
+            localStorage.setItem("user", JSON.stringify(data));
+        } catch (error) {
+            console.error("Google login failed:", error.response?.data?.message || error.message);
+            throw error; // let calling components handle UI feedback
         }
     }
 
