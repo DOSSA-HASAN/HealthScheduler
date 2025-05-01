@@ -3,6 +3,9 @@ import { userModel } from "../models/userModel.js"
 import bcrypt from "bcryptjs"
 import { sendEMail } from "../../lib/sendEmail.js"
 import cloudinary from "../../lib/cloudinaryImage.js"
+import { OAuth2Client } from "google-auth-library"
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 export const createAccount = async (req, res) => {
     const { email, password, username, imageUrl } = req.body
@@ -12,7 +15,7 @@ export const createAccount = async (req, res) => {
     try {
         const user = await userModel.findOne({ email })
         if (user)
-            return res.status(400).json({ message: "User with email already exists. Please log in" })
+            return res.status(409).json({ message: "User with email already exists. Please log in" })
 
         const genSalt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(password, genSalt)
@@ -52,7 +55,7 @@ export const createAccount = async (req, res) => {
 
 export const createDoctorOrAdminAccount = async (req, res) => {
     const user = req.user
-    const { email, password, username, imageUrl, role, specialization, experience } = req.body
+    const { email, password, username, role, specialization, experience } = req.body
 
     if (!email || !password || !username || !role)
         return res.status(400).json({ message: "missing required fields" })
@@ -68,11 +71,11 @@ export const createDoctorOrAdminAccount = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltRounds)
 
         const newUser = new userModel({
-                username,
-                password: hashedPassword,
-                email,
-                role,
-            })
+            username,
+            password: hashedPassword,
+            email,
+            role,
+        })
 
         if (role === "doctor") {
             if (specialization && experience) {
@@ -82,7 +85,7 @@ export const createDoctorOrAdminAccount = async (req, res) => {
         }
 
         await newUser.save()
-        
+
         return res.status(201).json(`${role} account has been created successfully.Please login`)
 
     } catch (error) {
@@ -94,7 +97,7 @@ export const createDoctorOrAdminAccount = async (req, res) => {
 export const login = async (req, res) => {
     const { email, password } = req.body
     if (!email || !password)
-        return res.status(404).json({ message: "Missing email or password" })
+        return res.status(400).json({ message: "Missing email or password" })
 
     try {
 
@@ -104,7 +107,7 @@ export const login = async (req, res) => {
 
         const isPasswordMatch = await bcrypt.compare(password, user.password)
         if (!isPasswordMatch)
-            return res.status(401).json({ message: "Invalid Password or email" })
+            return res.status(400).json({ message: "Invalid Password or email" })
 
         const token = jwt.sign(
             { id: user._id },
@@ -134,10 +137,64 @@ export const logout = (req, res) => {
     if (!token)
         return res.status(401).json({ message: "No user was logged in" })
     try {
-        res.clearCookie("token")
+        res.clearCookie("token", {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: process.env.NODE_ENV === "production"
+        })
         return res.status(200).json({ message: "User logged out" })
     } catch (error) {
         console.log(`Error occured while logging out: ${error.message}`)
         return res.status(500).json({ message: error.message })
+    }
+}
+
+export const googleLogin = async (req, res) => {
+    const { token } = req.body // Token sent from the frontend after Google login
+
+    try {
+        // Verify the Google ID token
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID, // Ensure this matches the Google client ID
+        })
+        
+        // Get the user info from the Google token
+        const { name, email, picture } = ticket.getPayload()
+
+        // Check if the user already exists in the database
+        let user = await userModel.findOne({ email })
+        if (!user) {
+            // If the user doesn't exist, create a new one
+            user = new userModel({
+                username: name,
+                email,
+                profilePic: picture,
+                password: '',  
+            })
+            await user.save()
+        }
+
+        // Generate a JWT token for the user
+        const tokenGenerated = jwt.sign(
+            { id: user._id },
+            process.env.SECRET_KEY,
+            { expiresIn: '7d' }
+        )
+
+        // Send cookie with token
+        res.cookie("token", tokenGenerated, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+        })
+
+        const { password: _, ...userWithoutPassword } = user._doc
+
+        return res.status(200).json(userWithoutPassword)
+
+    } catch (error) {
+        console.log(`Google login error: ${error.message}`)
+        return res.status(500).json({ message: "Authentication failed" })
     }
 }

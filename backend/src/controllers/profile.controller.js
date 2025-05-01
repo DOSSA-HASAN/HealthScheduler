@@ -122,7 +122,7 @@ export const sendEmailResetOTP = async (req, res) => {
 
 export const changeEmail = async (req, res) => {
     const { id: userId } = req.user
-    const { email, otp } = req.body
+    const { otp, email} = req.body
     if (!email || !otp || !userId)
         return res.status(400).json({ message: "Missing required fields" })
     try {
