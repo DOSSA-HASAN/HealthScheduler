@@ -8,6 +8,7 @@ import usersRouter from "./routes/users.route.js"
 import appointmentRouter from "./routes/appointment.route.js"
 import updateProfileRouter from "./routes/profile.route.js"
 import { io, app, server } from "../lib/socket.io.setup.js"
+import path from 'path';
 
 const PORT = process.env.PORT
 
