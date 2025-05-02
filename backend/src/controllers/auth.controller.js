@@ -179,7 +179,7 @@ export const googleLogin = async (req, res) => {
         const tokenGenerated = jwt.sign(
             { id: user._id },
             process.env.SECRET_KEY,
-            { expiresIn: '7d' }
+            { expiresIn: '1d' }
         )
 
         // Send cookie with token

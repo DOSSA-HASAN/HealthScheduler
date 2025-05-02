@@ -8,9 +8,16 @@ export const verifyAdmin = async (req, res, next) => {
         return res.status(401).json({ message: "no token found" })
 
     try {
-        const decodedAdmin = jwt.verify(token, process.env.SECRET_KEY)
+        const decodedAdmin = jwt.verify(token, process.env.SECRET_KEY, (err, dec) => {
+            if (err) {
+                if (err.name === "TokenExpiredError") {
+                    return res.status(401).json({ message: "Token expired" })
+                }
+                return res.status(403).json({ message: "Invalid token" })
+            }
+        })
         let adminIdObject;
-        if(mongoose.isObjectIdOrHexString(decodedAdmin.id)){
+        if (mongoose.isObjectIdOrHexString(decodedAdmin.id)) {
             adminIdObject = mongoose.Types.ObjectId.createFromHexString(decodedAdmin.id)
         }
 

@@ -7,7 +7,14 @@ export const verifyDoctor = async (req, res, next) => {
         return res.status(400).json({ message: "missing token" })
 
     try {
-        const decodedDoctor = jwt.verify(token, process.env.SECRET_KEY)
+        const decodedDoctor = jwt.verify(token, process.env.SECRET_KEY, (err, dec) => {
+            if(err){
+                if(err.name === "TokenExpiredError"){
+                    return res.status(401).json({message: "Token expired"})
+                }
+                return res.status(403).json({message: "Invalid token"})
+            }
+        })
         const doctor = await userModel.findById(decodedDoctor.id).select("-password")
         if (!doctor)
             return res.status(404).json({ message: "doctor not found" })

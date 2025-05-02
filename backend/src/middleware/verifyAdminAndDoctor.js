@@ -8,7 +8,14 @@ export const verifyAdminAndDoctor = async (req, res, next) => {
         return res.status(400).json({ message: "no token found" })
 
     try {
-        const decodedAdminAndDoctor = jwt.verify(token, process.env.SECRET_KEY)
+        const decodedAdminAndDoctor = jwt.verify(token, process.env.SECRET_KEY, (err, dec) => {
+            if (err) {
+                if (err.name === "TokenExpiredError") {
+                    return res.status(401).json({ message: "Token expired" })
+                }
+                return res.status(403).json({ message: "Invalid token" })
+            }
+        })
         let adminOrDoctorId;
 
         if (mongoose.isObjectIdOrHexString(decodedAdminAndDoctor.id)) {

@@ -7,7 +7,14 @@ export const verifyUser = async (req, res, next) => {
         return res.status(404).json({ message: "No token found" })
 
     try {
-        const decodedUser = jwt.verify(token, process.env.SECRET_KEY)
+        const decodedUser = jwt.verify(token, process.env.SECRET_KEY, (err, dec) => {
+            if (err) {
+                if (err.name === "TokenExpiredError") {
+                    return res.status(401).json({ message: 'Token expired' })
+                }
+                return res.status(403).json({ message: 'Token is not valid' });
+            }
+        })
         if (!decodedUser)
             return res.status().json({ message: "User could not be decoded" })
 
