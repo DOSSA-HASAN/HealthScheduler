@@ -8,14 +8,7 @@ export const verifyAdmin = async (req, res, next) => {
         return res.status(401).json({ message: "no token found" })
 
     try {
-        const decodedAdmin = jwt.verify(token, process.env.SECRET_KEY, (err, dec) => {
-            if (err) {
-                if (err.name === "TokenExpiredError") {
-                    return res.status(401).json({ message: "Token expired" })
-                }
-                return res.status(403).json({ message: "Invalid token" })
-            }
-        })
+        const decodedAdmin = jwt.verify(token, process.env.SECRET_KEY)
         let adminIdObject;
         if (mongoose.isObjectIdOrHexString(decodedAdmin.id)) {
             adminIdObject = mongoose.Types.ObjectId.createFromHexString(decodedAdmin.id)
@@ -27,6 +20,12 @@ export const verifyAdmin = async (req, res, next) => {
         req.user = admin
         next()
     } catch (error) {
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({ message: "Token expired" })
+        }
+        if (error.name === "JsonWebTokenError") {
+            return res.status(403).json({ message: "Invalid token" })
+        }
         console.log(`Error occured while verifying admin: ${error.message}`)
         console.log(`Error occured while verifying admin: ${error.stack}`)
         return res.status(500).json({ message: error.message })
