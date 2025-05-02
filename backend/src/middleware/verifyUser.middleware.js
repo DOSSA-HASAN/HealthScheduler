@@ -16,7 +16,7 @@ export const verifyUser = async (req, res, next) => {
             }
         })
         if (!decodedUser)
-            return res.status().json({ message: "User could not be decoded" })
+            return res.status(400).json({ message: "User could not be decoded" })
 
         // find user from user model with corresponding payload id form decode
         const user = await userModel.findById(decodedUser.id)
