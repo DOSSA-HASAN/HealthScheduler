@@ -70,9 +70,9 @@ function Navbar() {
                             </div>
                             :
                             <div className='flex flex-col justify-between items-center w-full'>
-                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("dashboard") || location.pathname === '/' ? 'text-blue-500' : 'text-gray-500'}`} to={'/dashboard'}>Dashboard</Link>
+                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${location.pathname === '/' ? 'text-blue-500' : 'text-gray-500'}`} to={'/'}>Home</Link>
                                 <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("appointments") ? 'text-blue-500' : 'text-gray-500'}`} to={'/appointments'}>Appointments</Link>
-                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("book-appointment") ? 'text-blue-500' : 'text-gray-500'}`} to={'/book-appointment'}>Book APpointments</Link>
+                                <Link className={`mt-3 mb-3 font-bold text-[16px] ${lastSegment.startsWith("book-appointment") ? 'text-blue-500' : 'text-gray-500'}`} to={'/book-appointment'}>Book Appointments</Link>
                                 <Link to={'/profile'}>
                                     <img className='border-1 border-gray-400 w-[40px] h-[40px] rounded-full mt-3 mb-t' src={authUser.profilePic || "/no-avatar.png"} alt="" srcset="" />
                                 </Link>

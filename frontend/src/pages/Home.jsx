@@ -13,7 +13,7 @@ function Home() {
                         <span className='text-blue-600 mr-[10px] animate-pulse'><Activity /></span>
                         <p className='font-semibold'>Your Health, Our Priority</p>
                     </div>
-                    <h1 className='font-bold text-[50px] leading-[1] w-full lg:w-[70%]'>Serving Your Health Needs Is Our Priority</h1>
+                    <h1 className='font-bold text-[40px] lg:text-[50px] leading-[1] w-full lg:w-[70%]'>Serving Your Health Needs Is Our Priority</h1>
                     <p className='text-gray-600 mt-[30px] mb-[30px] w-full lg:w-[70%]'>Easily book an appointment from the comfort of your home with our experienced health specialists</p>
                     <Link to={'/book-appointment'} ><button className='shadow-md p-[10px] bg-blue-600 hover:bg-blue-500 hover:cursor-pointer rounded-md text-white font-bold text-center w-[200px]'>Book Now</button></Link>
                 </article>
