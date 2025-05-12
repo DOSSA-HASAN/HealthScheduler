@@ -13,7 +13,7 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response.status === 401 && error.response.data.message === "Token expired") {
-            const { logout } = useAuthStore().get()
+            // const { logout } = useAuthStore().get()
             logout()
             localStorage.clear()
             window.location.pathname = "/login"
