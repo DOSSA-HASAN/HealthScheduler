@@ -6,14 +6,12 @@ export const axiosInstance = axios.create({
     withCredentials: true
 })
 
-const logout = useAuthStore.getState().logout
-
 
 axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response.status === 401 && error.response.data.message === "Token expired") {
-            // const { logout } = useAuthStore().get()
+            const logout = useAuthStore.getState().logout
             logout()
             localStorage.clear()
             window.location.pathname = "/login"
