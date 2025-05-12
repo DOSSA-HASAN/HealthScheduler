@@ -134,9 +134,6 @@ export const login = async (req, res) => {
 }
 
 export const logout = (req, res) => {
-    const token = req.cookies.token
-    if (!token)
-        return res.status(401).json({ message: "No user was logged in" })
     try {
         res.clearCookie("token", {
             httpOnly: true,

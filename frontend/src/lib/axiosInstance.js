@@ -6,6 +6,9 @@ export const axiosInstance = axios.create({
     withCredentials: true
 })
 
+const logout = useAuthStore.getState().logout
+
+
 axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
